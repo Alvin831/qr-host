@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Generate QR Presensi</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+body{
+    font-family: Arial;
+    text-align:center;
+    padding:40px;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    color:white;
+}
+.container{
+    max-width:500px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    color:black;
+}
+input,button{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+button{
+    background:#667eea;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+#qr{
+    margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h2>Generate QR Presensi</h2>
+
+<input type="text" id="baseUrl"
+value="https://script.google.com/macros/s/AKfycbwzUheSSP7Ht8vf4vLjOhqP7tFTQ-Q5UL8KvDnTrQ9JEYhQ8kgrvLH7s82wNeiNJZ8/exec">
+
+<input type="number" id="duration" value="5" placeholder="Durasi (menit)">
+
+<button onclick="generateQR()">Generate QR</button>
+
+<h3 id="tokenText"></h3>
+<div id="qr"></div>
+
+</div>
+
+<script>
+async function generateQR(){
+
+    const baseUrl=document.getElementById("baseUrl").value.trim();
+    const duration=document.getElementById("duration").value;
+
+    document.getElementById("qr").innerHTML="";
+    document.getElementById("tokenText").innerHTML="Generating...";
+
+    const url=baseUrl+"?path=presence/qr/generate&duration="+duration;
+
+    const response=await fetch(url);
+    const data=await response.json();
+
+    if(data.ok){
+        const token=data.data.qr_token;
+
+        document.getElementById("tokenText").innerHTML="Token: "+token;
+
+        new QRCode(document.getElementById("qr"),{
+            text:token,
+            width:250,
+            height:250
+        });
+    }else{
+        alert(data.error);
+    }
+}
+</script>
+
+</body>
+</html>
