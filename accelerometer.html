@@ -107,9 +107,7 @@ ts: Date.now()
 batch.push(data);
 
 if(batch.length >= 10){
-
 sendBatch();
-
 }
 
 }
@@ -123,27 +121,22 @@ readings: batch
 
 fetch(API_URL,{
 method:"POST",
-mode:"no-cors",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(payload)
+body: JSON.stringify(payload)
 })
-.then(res=>res.json())
-.then(res=>{
+.then(response => {
 
 document.getElementById("status").innerText =
-"Batch terkirim: " + batch.length + " data";
+"Batch berhasil dikirim (" + batch.length + " data)";
 
 batch = [];
 
 })
-.catch(err=>{
+.catch(error => {
 
 document.getElementById("status").innerText =
 "Gagal kirim data";
 
-console.log(err);
+console.log(error);
 
 });
 
@@ -152,5 +145,4 @@ console.log(err);
 </script>
 
 </body>
-
 </html>
