@@ -5,6 +5,7 @@
 <title>Accelerometer Telemetry</title>
 
 <style>
+
 body{
 font-family: Arial;
 text-align:center;
@@ -29,10 +30,19 @@ border-radius:8px;
 background:#2b7cff;
 color:white;
 cursor:pointer;
+margin:5px;
 }
 
 button:hover{
 background:#1a5fd1;
+}
+
+#stopBtn{
+background:#e53935;
+}
+
+#stopBtn:hover{
+background:#c62828;
 }
 
 #status{
@@ -40,6 +50,7 @@ margin-top:20px;
 font-size:16px;
 color:green;
 }
+
 </style>
 
 </head>
@@ -49,12 +60,13 @@ color:green;
 <h1>Accelerometer Telemetry</h1>
 
 <button onclick="startSensor()">Start Sensor</button>
+<button id="stopBtn" onclick="stopSensor()">Stop Sensor</button>
 
 <div class="data">AX: <span id="ax">0</span></div>
 <div class="data">AY: <span id="ay">0</span></div>
 <div class="data">AZ: <span id="az">0</span></div>
 
-<div id="status">Menunggu sensor...</div>
+<div id="status">Sensor belum aktif</div>
 
 <script>
 
@@ -63,8 +75,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwzUheSSP7Ht8vf4vLjOhqP
 const DEVICE_ID = "HP-01";
 
 let batch = [];
+let sensorActive = false;
 
 function startSensor(){
+
+sensorActive = true;
 
 if (typeof DeviceMotionEvent.requestPermission === 'function') {
 
@@ -87,7 +102,17 @@ window.addEventListener("devicemotion", handleMotion);
 document.getElementById("status").innerText = "Sensor aktif...";
 }
 
+function stopSensor(){
+
+sensorActive = false;
+
+document.getElementById("status").innerText = "Sensor dihentikan";
+
+}
+
 function handleMotion(event){
+
+if(!sensorActive) return;
 
 let ax = event.accelerationIncludingGravity.x || 0;
 let ay = event.accelerationIncludingGravity.y || 0;
@@ -123,7 +148,7 @@ fetch(API_URL,{
 method:"POST",
 body: JSON.stringify(payload)
 })
-.then(response => {
+.then(() => {
 
 document.getElementById("status").innerText =
 "Batch berhasil dikirim (" + batch.length + " data)";
