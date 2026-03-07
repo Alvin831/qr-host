@@ -1,592 +1,334 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presensi Mahasiswa - QR Scanner</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes scanLine {
-            0%, 100% { top: 0%; }
-            50% { top: 100%; }
-        }
-        
-        @keyframes moveGrid {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #fa709a, #fee140, #30cfd0, #a8edea);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-            overflow-x: hidden;
-        }
-        
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            animation: moveGrid 20s linear infinite;
-            pointer-events: none;
-        }
-        
-        .container {
-            max-width: 550px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .header {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 50px;
-            margin-bottom: 30px;
-            box-shadow: 0 25px 70px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.2);
-            text-align: center;
-            animation: fadeIn 0.6s ease;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.18);
-        }
-        
-        .header::before {
-            content: '🎓';
-            position: absolute;
-            font-size: 180px;
-            opacity: 0.08;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .header h1 {
-            color: white;
-            font-size: 42px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            position: relative;
-            z-index: 1;
-            letter-spacing: -0.5px;
-        }
-        
-        .header .subtitle {
-            color: rgba(255,255,255,0.95);
-            font-size: 17px;
-            font-weight: 300;
-            position: relative;
-            z-index: 1;
-            letter-spacing: 0.5px;
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(15px);
-            border-radius: 25px;
-            padding: 40px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.5);
-            animation: fadeIn 0.8s ease;
-            border: 1px solid rgba(255,255,255,0.4);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 25px 70px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.5);
-        }
-        
-        .card h3 {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 600;
-            font-size: 22px;
-            letter-spacing: -0.3px;
-            margin-bottom: 25px;
-        }
-        
-        .form-group {
-            margin-bottom: 25px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 12px;
-            color: #2d3748;
-            font-weight: 500;
-            font-size: 15px;
-            letter-spacing: 0.3px;
-        }
-        
-        input {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
-            font-size: 15px;
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: #f8fafc;
-            font-weight: 400;
-        }
-        
-        input:focus {
-            outline: none;
-            border-color: #fa709a;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(250, 112, 154, 0.1), 0 4px 12px rgba(250, 112, 154, 0.15);
-            transform: translateY(-2px);
-        }
-        
-        input::placeholder {
-            color: #a0aec0;
-            font-weight: 300;
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            font-size: 17px;
-            font-weight: 600;
-            font-family: 'Poppins', sans-serif;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-bottom: 15px;
-            box-shadow: 0 6px 20px rgba(250, 112, 154, 0.35);
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.3px;
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.25);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-        }
-        
-        .btn:hover::before {
-            width: 400px;
-            height: 400px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 35px rgba(250, 112, 154, 0.45);
-        }
-        
-        .btn:active {
-            transform: translateY(-2px);
-        }
-        
-        .btn:disabled {
-            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
-            box-shadow: 0 6px 20px rgba(48, 207, 208, 0.35);
-        }
-        
-        .btn-secondary:hover {
-            box-shadow: 0 12px 35px rgba(48, 207, 208, 0.45);
-        }
-        
-        .scanner-container {
-            background: #000;
-            border-radius: 20px;
-            overflow: hidden;
-            margin: 25px 0;
-            position: relative;
-            display: none;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-        }
-        
-        #scanner {
-            width: 100%;
-            max-height: 400px;
-        }
-        
-        .scanner-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 250px;
-            height: 250px;
-            border: 4px solid #00ff00;
-            border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
-        }
-        
-        .scanner-overlay::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            animation: scanLine 2s linear infinite;
-        }
-        
-        .alert {
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 25px;
-            font-size: 15px;
-            animation: fadeIn 0.4s ease;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-            font-weight: 500;
-        }
-        
-        .alert-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-            border: none;
-        }
-        
-        .alert-error {
-            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-            color: white;
-            border: none;
-        }
-        
-        .alert-info {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            border: none;
-        }
-        
-        .info-text {
-            font-size: 13px;
-            color: #718096;
-            margin-top: 8px;
-            font-style: italic;
-            font-weight: 300;
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 30px 0;
-            color: #a0aec0;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 2px;
-        }
-        
-        .status-box {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            padding: 30px;
-            border-radius: 20px;
-            margin-top: 30px;
-            display: none;
-            color: white;
-            box-shadow: 0 15px 40px rgba(17, 153, 142, 0.35);
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .status-box h4 {
-            margin-bottom: 25px;
-            font-size: 22px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-        }
-        
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .status-item:last-child {
-            border-bottom: none;
-        }
-        
-        .status-label {
-            color: rgba(255,255,255,0.9);
-            font-size: 15px;
-            font-weight: 400;
-        }
-        
-        .status-value {
-            color: white;
-            font-weight: 600;
-            font-size: 15px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎓 Presensi Mahasiswa</h1>
-            <p class="subtitle">Scan QR Code untuk Check-in</p>
-        </div>
-        
-        <div class="card">
-            <h3>⚙️ Konfigurasi</h3>
-            <div class="form-group">
-                <label>Base URL Backend</label>
-                <input type="text" id="baseUrl" placeholder="https://script.google.com/macros/s/.../exec">
-                <p class="info-text">URL dari Google Apps Script</p>
-            </div>
-            
-            <div class="form-group">
-                <label>NIM / User ID</label>
-                <input type="text" id="userId" placeholder="Contoh: 2024001" value="">
-                <p class="info-text">Nomor Induk Mahasiswa</p>
-            </div>
-            
-            <div class="form-group">
-                <label>Mata Kuliah</label>
-                <input type="text" id="courseId" placeholder="Contoh: CLOUD-COMPUTING-101" value="CLOUD-COMPUTING-101">
-            </div>
-            
-            <div class="form-group">
-                <label>Sesi Pertemuan</label>
-                <input type="text" id="sessionId" placeholder="Contoh: PERTEMUAN-01" value="PERTEMUAN-01">
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>📷 Scan QR Code</h3>
-            
-            <button class="btn" onclick="startScanner()" id="btnStartScan">📸 Buka Kamera</button>
-            <button class="btn" onclick="stopScanner()" id="btnStopScan" style="display: none; background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">⏹️ Tutup Kamera</button>
-            
-            <div class="scanner-container" id="scannerContainer">
-                <video id="scanner" playsinline></video>
-                <div class="scanner-overlay"></div>
-            </div>
-            
-            <div class="divider">── ATAU ──</div>
-            
-            <div class="form-group">
-                <label>Input Token Manual</label>
-                <input type="text" id="manualToken" placeholder="Paste token dari QR code">
-                <p class="info-text">Jika tidak bisa scan, masukkan token secara manual</p>
-            </div>
-            
-            <button class="btn btn-secondary" onclick="checkInManual()">✅ Check-in Manual</button>
-            
-            <div id="alertBox"></div>
-            <div class="status-box" id="statusBox"></div>
-        </div>
-    </div>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presensi Mahasiswa - QR Scanner</title>
 
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script>
-        let html5QrCode = null;
-        
-        window.onload = function() {
-            const savedUrl = localStorage.getItem('baseUrl');
-            const savedUserId = localStorage.getItem('userId');
-            
-            if (savedUrl) document.getElementById('baseUrl').value = savedUrl;
-            if (savedUserId) document.getElementById('userId').value = savedUserId;
-        };
-        
-        function showAlert(message, type = 'info') {
-            const alertBox = document.getElementById('alertBox');
-            alertBox.className = 'alert alert-' + type;
-            alertBox.innerHTML = message;
-            alertBox.style.display = 'block';
-        }
-        
-        async function startScanner() {
-            const scannerContainer = document.getElementById('scannerContainer');
-            const btnStart = document.getElementById('btnStartScan');
-            const btnStop = document.getElementById('btnStopScan');
-            
-            try {
-                html5QrCode = new Html5Qrcode("scanner");
-                
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 }
-                    },
-                    onScanSuccess,
-                    onScanFailure
-                );
-                
-                scannerContainer.style.display = 'block';
-                btnStart.style.display = 'none';
-                btnStop.style.display = 'block';
-                
-                showAlert('📷 Kamera aktif. Arahkan ke QR code.', 'info');
-            } catch (err) {
-                showAlert('❌ Gagal membuka kamera: ' + err, 'error');
-            }
-        }
-        
-        async function stopScanner() {
-            if (html5QrCode) {
-                await html5QrCode.stop();
-                html5QrCode = null;
-            }
-            
-            document.getElementById('scannerContainer').style.display = 'none';
-            document.getElementById('btnStartScan').style.display = 'block';
-            document.getElementById('btnStopScan').style.display = 'none';
-        }
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            document.getElementById('manualToken').value = decodedText;
-            stopScanner();
-            showAlert('✅ QR Code terdeteksi! Memproses check-in...', 'success');
-            setTimeout(() => checkInManual(), 500);
-        }
-        
-        function onScanFailure(error) {
-            // Ignore
-        }
-        
-        async function checkInManual() {
-            let baseUrl = document.getElementById('baseUrl').value.trim();
-            const userId = document.getElementById('userId').value.trim();
-            const courseId = document.getElementById('courseId').value.trim();
-            const sessionId = document.getElementById('sessionId').value.trim();
-            const token = document.getElementById('manualToken').value.trim();
-            const alertBox = document.getElementById('alertBox');
-            const statusBox = document.getElementById('statusBox');
-            
-            if (!baseUrl) {
-                showAlert('❌ Base URL harus diisi!', 'error');
-                return;
-            }
-            
-            if (!userId || !courseId || !sessionId || !token) {
-                showAlert('❌ Semua field harus diisi!', 'error');
-                return;
-            }
-            
-            baseUrl = baseUrl.replace(/\/+$/, '');
-            if (!baseUrl.endsWith('/exec')) {
-                baseUrl = baseUrl + '/exec';
-                document.getElementById('baseUrl').value = baseUrl;
-            }
-            
-            localStorage.setItem('baseUrl', baseUrl);
-            localStorage.setItem('userId', userId);
-            
-            showAlert('⏳ Memproses check-in...', 'info');
-            statusBox.style.display = 'none';
-            
-            try {
-                const formData = new URLSearchParams();
-                formData.append('path', 'presence/checkin');
-                formData.append('user_id', userId);
-                formData.append('device_id', 'WEB-' + Date.now());
-                formData.append('course_id', courseId);
-                formData.append('session_id', sessionId);
-                formData.append('qr_token', token);
-                formData.append('ts', new Date().toISOString());
-                
-                const response = await fetch(baseUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData.toString()
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.ok && data.data) {
-                    showAlert('🎉 Check-in berhasil!', 'success');
-                    
-                    statusBox.innerHTML = `
-                        <h4>✅ Presensi Berhasil Dicatat!</h4>
-                        <div class="status-item">
-                            <span class="status-label">NIM</span>
-                            <span class="status-value">${userId}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">Mata Kuliah</span>
-                            <span class="status-value">${courseId}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">Sesi</span>
-                            <span class="status-value">${sessionId}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">Waktu</span>
-                            <span class="status-value">${new Date().toLocaleString('id-ID')}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-label">Presence ID</span>
-                            <span class="status-value">${data.data.presence_id}</span>
-                        </div>
-                    `;
-                    statusBox.style.display = 'block';
-                    
-                    document.getElementById('manualToken').value = '';
-                } else {
-                    throw new Error(data.error || 'Check-in gagal');
-                }
-            } catch (error) {
-                showAlert(`❌ Error: ${error.message}<br><br><strong>Kemungkinan penyebab:</strong><br>
-                    • Token tidak valid atau sudah expired<br>
-                    • Token sudah digunakan<br>
-                    • Sudah pernah check-in<br>
-                    • Backend belum di-deploy`, 'error');
-                
-                statusBox.style.display = 'none';
-            }
-        }
-    </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f5f5;
+padding:20px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:15px;
+margin-bottom:20px;
+box-shadow:0 10px 20px rgba(0,0,0,0.1);
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:5px;
+margin-bottom:10px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+background:#4CAF50;
+color:white;
+font-size:16px;
+margin-top:10px;
+}
+
+#scannerContainer{
+display:none;
+margin-top:20px;
+}
+
+#scanner{
+width:100%;
+}
+
+#scanner video{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.alert{
+padding:15px;
+margin-top:15px;
+border-radius:10px;
+}
+
+.alert-success{
+background:#4CAF50;
+color:white;
+}
+
+.alert-error{
+background:#f44336;
+color:white;
+}
+
+.alert-info{
+background:#2196F3;
+color:white;
+}
+
+.status-box{
+display:none;
+background:#e8f5e9;
+padding:15px;
+margin-top:20px;
+border-radius:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h3>Konfigurasi</h3>
+
+<label>Base URL Backend</label>
+<input type="text" id="baseUrl" placeholder="https://script.google.com/macros/s/.../exec">
+
+<label>NIM</label>
+<input type="text" id="userId">
+
+<label>Mata Kuliah</label>
+<input type="text" id="courseId" value="CLOUD-COMPUTING-101">
+
+<label>Sesi</label>
+<input type="text" id="sessionId" value="PERTEMUAN-01">
+
+</div>
+
+<div class="card">
+
+<h3>Scan QR</h3>
+
+<button onclick="startScanner()" id="btnStartScan">Buka Kamera</button>
+<button onclick="stopScanner()" id="btnStopScan" style="display:none;background:red">Tutup Kamera</button>
+
+<div id="scannerContainer">
+<div id="scanner"></div>
+</div>
+
+<input type="text" id="manualToken" placeholder="Token QR">
+
+<button onclick="checkInManual()">Check In</button>
+
+<div id="alertBox"></div>
+<div id="statusBox" class="status-box"></div>
+
+</div>
+
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+
+let html5QrCode=null
+let isScanning=false
+let alreadyScanned=false
+
+window.onload=function(){
+
+const savedUrl=localStorage.getItem('baseUrl')
+const savedUserId=localStorage.getItem('userId')
+
+if(savedUrl)document.getElementById('baseUrl').value=savedUrl
+if(savedUserId)document.getElementById('userId').value=savedUserId
+
+}
+
+function showAlert(message,type='info'){
+
+const alertBox=document.getElementById('alertBox')
+
+alertBox.className='alert alert-'+type
+alertBox.innerHTML=message
+alertBox.style.display='block'
+
+}
+
+async function startScanner(){
+
+const scannerContainer=document.getElementById('scannerContainer')
+const btnStart=document.getElementById('btnStartScan')
+const btnStop=document.getElementById('btnStopScan')
+
+try{
+
+alreadyScanned=false
+isScanning=true
+
+html5QrCode=new Html5Qrcode("scanner")
+
+await html5QrCode.start(
+{ facingMode:{ exact:"environment"} },
+{
+fps:10,
+qrbox:{width:250,height:250}
+},
+onScanSuccess
+)
+
+scannerContainer.style.display='block'
+btnStart.style.display='none'
+btnStop.style.display='block'
+
+showAlert('Kamera aktif. Arahkan ke QR Code','info')
+
+}catch(err){
+
+showAlert('Gagal membuka kamera '+err,'error')
+
+}
+
+}
+
+async function stopScanner(){
+
+try{
+
+if(html5QrCode && isScanning){
+
+await html5QrCode.stop()
+await html5QrCode.clear()
+
+}
+
+}catch(e){}
+
+html5QrCode=null
+isScanning=false
+
+document.getElementById('scannerContainer').style.display='none'
+document.getElementById('btnStartScan').style.display='block'
+document.getElementById('btnStopScan').style.display='none'
+
+}
+
+function onScanSuccess(decodedText){
+
+if(alreadyScanned)return
+
+alreadyScanned=true
+isScanning=false
+
+document.getElementById('manualToken').value=decodedText
+
+showAlert('QR terdeteksi, memproses checkin','success')
+
+stopScanner()
+
+setTimeout(()=>{
+checkInManual()
+},800)
+
+}
+
+async function checkInManual(){
+
+let baseUrl=document.getElementById('baseUrl').value.trim()
+const userId=document.getElementById('userId').value.trim()
+const courseId=document.getElementById('courseId').value.trim()
+const sessionId=document.getElementById('sessionId').value.trim()
+const token=document.getElementById('manualToken').value.trim()
+
+const statusBox=document.getElementById('statusBox')
+
+if(!baseUrl){
+showAlert('Base URL kosong','error')
+return
+}
+
+if(!userId||!courseId||!sessionId||!token){
+showAlert('Data belum lengkap','error')
+return
+}
+
+baseUrl=baseUrl.replace(/\/+$/,'')
+
+if(!baseUrl.endsWith('/exec')){
+baseUrl+='/exec'
+}
+
+localStorage.setItem('baseUrl',baseUrl)
+localStorage.setItem('userId',userId)
+
+showAlert('Mengirim data...','info')
+
+try{
+
+const formData=new URLSearchParams()
+
+formData.append('path','presence/checkin')
+formData.append('user_id',userId)
+formData.append('device_id','WEB-'+Date.now())
+formData.append('course_id',courseId)
+formData.append('session_id',sessionId)
+formData.append('qr_token',token)
+formData.append('ts',new Date().toISOString())
+
+const response=await fetch(baseUrl,{
+method:'POST',
+headers:{
+'Content-Type':'application/x-www-form-urlencoded'
+},
+body:formData.toString()
+})
+
+const data=await response.json()
+
+if(data.ok){
+
+showAlert('Checkin berhasil','success')
+
+statusBox.style.display='block'
+
+statusBox.innerHTML=`
+<b>Presensi Berhasil</b><br><br>
+NIM : ${userId}<br>
+Course : ${courseId}<br>
+Session : ${sessionId}<br>
+Time : ${new Date().toLocaleString()}
+`
+
+document.getElementById('manualToken').value=''
+
+}else{
+
+throw new Error(data.error)
+
+}
+
+}catch(error){
+
+showAlert('Error '+error.message,'error')
+
+}
+
+}
+
+</script>
+
 </body>
 </html>
