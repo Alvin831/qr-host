@@ -11,7 +11,7 @@
 <style>
 
 body{
-font-family:Arial;
+font-family: Arial;
 background:#f5f5f5;
 padding:20px;
 }
@@ -49,7 +49,7 @@ font-size:16px;
 margin-top:10px;
 }
 
-#scannerContainer{
+.scanner-container{
 display:none;
 margin-top:20px;
 }
@@ -105,7 +105,7 @@ border-radius:10px;
 <h3>Konfigurasi</h3>
 
 <label>Base URL Backend</label>
-<input type="text" id="baseUrl" placeholder="https://script.google.com/macros/s/.../exec">
+<input type="text" id="baseUrl">
 
 <label>NIM</label>
 <input type="text" id="userId">
@@ -125,7 +125,7 @@ border-radius:10px;
 <button onclick="startScanner()" id="btnStartScan">Buka Kamera</button>
 <button onclick="stopScanner()" id="btnStopScan" style="display:none;background:red">Tutup Kamera</button>
 
-<div id="scannerContainer">
+<div class="scanner-container" id="scannerContainer">
 <div id="scanner"></div>
 </div>
 
@@ -147,16 +147,6 @@ border-radius:10px;
 let html5QrCode=null
 let isScanning=false
 let alreadyScanned=false
-
-window.onload=function(){
-
-const savedUrl=localStorage.getItem('baseUrl')
-const savedUserId=localStorage.getItem('userId')
-
-if(savedUrl)document.getElementById('baseUrl').value=savedUrl
-if(savedUserId)document.getElementById('userId').value=savedUserId
-
-}
 
 function showAlert(message,type='info'){
 
@@ -182,10 +172,10 @@ isScanning=true
 html5QrCode=new Html5Qrcode("scanner")
 
 await html5QrCode.start(
-{ facingMode:{ exact:"environment"} },
+{ facingMode:"environment" },
 {
 fps:10,
-qrbox:{width:250,height:250}
+qrbox:250
 },
 onScanSuccess
 )
@@ -228,10 +218,9 @@ document.getElementById('btnStopScan').style.display='none'
 
 function onScanSuccess(decodedText){
 
-if(alreadyScanned)return
+if(alreadyScanned) return
 
 alreadyScanned=true
-isScanning=false
 
 document.getElementById('manualToken').value=decodedText
 
@@ -264,15 +253,6 @@ if(!userId||!courseId||!sessionId||!token){
 showAlert('Data belum lengkap','error')
 return
 }
-
-baseUrl=baseUrl.replace(/\/+$/,'')
-
-if(!baseUrl.endsWith('/exec')){
-baseUrl+='/exec'
-}
-
-localStorage.setItem('baseUrl',baseUrl)
-localStorage.setItem('userId',userId)
 
 showAlert('Mengirim data...','info')
 
