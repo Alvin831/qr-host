@@ -417,7 +417,7 @@
 
                 <div class="form-group">
                     <label>Base URL Backend</label>
-                    <input type="text" id="baseUrl" placeholder="https://script.google.com/macros/s/AKfycbwzUheSSP7Ht8vf4vLjOhqP7tFTQ-Q5UL8KvDnTrQ9JEYhQ8kgrvLH7s82wNeiNJZ8/exec">
+                    <input type="text" id="baseUrl" placeholder="https://script.google.com/macros/s/.../exec">
                 </div>
             </div>
         </div>
@@ -453,6 +453,14 @@
             setTimeout(() => {
                 if (typeof Html5QrcodeScanner === 'undefined') {
                     showAlert('❌ Library scanner gagal dimuat. Refresh halaman.', 'error');
+                } else {
+                    console.log('[v0] Scanner library loaded successfully');
+                }
+                
+                // Check camera support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showAlert('❌ Browser tidak support akses kamera', 'error');
+                    document.getElementById('btnStartScan').disabled = true;
                 }
             }, 1000);
         });
@@ -489,55 +497,61 @@
             cameraPlaceholder.style.display = 'none';
             btnStart.classList.add('hidden');
             btnStop.classList.remove('hidden');
+            btnStart.disabled = true;
 
-            try {
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader",
-                    {
-                        fps: 20,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0,
-                        showTorchButtonIfSupported: true,
-                        rememberLastUsedCamera: true,
-                        videoConstraints: {
-                            facingMode: 'environment',
-                            width: { ideal: 1920 },
-                            height: { ideal: 1440 }
-                        }
-                    },
-                    false
-                );
-
-                html5QrcodeScanner.render(onScanSuccess, onScanError);
-                isScannerRunning = true;
-                showAlert('📷 Kamera aktif! Arahkan ke QR code', 'info', 3000);
-                console.log('[QR Scanner] Camera started successfully');
-            } catch (error) {
-                console.error('[QR Scanner] Error:', error);
-                showAlert('❌ Gagal membuka kamera: ' + error.message, 'error');
+            // Request camera permission first
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            }).then(stream => {
+                // Stop the stream first
+                stream.getTracks().forEach(track => track.stop());
                 
-                cameraWrapper.classList.add('hidden');
-                cameraPlaceholder.style.display = 'block';
-                btnStart.classList.remove('hidden');
-                btnStop.classList.add('hidden');
-                isScannerRunning = false;
-            }
+                // Now initialize scanner
+                try {
+                    html5QrcodeScanner = new Html5QrcodeScanner(
+                        "reader",
+                        {
+                            fps: 15,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0,
+                            showTorchButtonIfSupported: true,
+                            rememberLastUsedCamera: true,
+                            videoConstraints: {
+                                facingMode: { exact: 'environment' }
+                            }
+                        },
+                        false
+                    );
+
+                    html5QrcodeScanner.render(onScanSuccess, onScanError);
+                    isScannerRunning = true;
+                    btnStart.disabled = false;
+                    showAlert('📷 Kamera aktif! Arahkan ke QR code', 'success', 3000);
+                    console.log('[v0] Camera started successfully');
+                } catch (error) {
+                    console.error('[v0] Scanner init error:', error);
+                    showAlert('❌ Gagal inisialisasi: ' + error.message, 'error');
+                    resetCameraUI();
+                }
+            }).catch(error => {
+                console.error('[v0] Permission error:', error.name, error.message);
+                btnStart.disabled = false;
+                
+                if (error.name === 'NotAllowedError') {
+                    showAlert('❌ Izin akses kamera ditolak. Buka Settings > Permissions > Camera', 'error');
+                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    showAlert('❌ Kamera tidak ditemukan di device ini', 'error');
+                } else if (error.name === 'NotReadableError') {
+                    showAlert('❌ Kamera sedang digunakan aplikasi lain. Tutup dan coba lagi.', 'error');
+                } else {
+                    showAlert('❌ Error akses kamera: ' + error.message, 'error');
+                }
+                
+                resetCameraUI();
+            });
         }
 
-        function stopScanner() {
-            try {
-                if (html5QrcodeScanner && isScannerRunning) {
-                    html5QrcodeScanner.clear().catch(err => {
-                        console.warn('[QR Scanner] Clear error:', err);
-                    });
-                    html5QrcodeScanner = null;
-                    isScannerRunning = false;
-                    console.log('[QR Scanner] Camera stopped');
-                }
-            } catch (error) {
-                console.error('[QR Scanner] Stop error:', error);
-            }
-
+        function resetCameraUI() {
             const cameraWrapper = document.getElementById('cameraWrapper');
             const cameraPlaceholder = document.getElementById('cameraPlaceholder');
             const btnStart = document.getElementById('btnStartScan');
@@ -547,12 +561,29 @@
             cameraPlaceholder.style.display = 'block';
             btnStart.classList.remove('hidden');
             btnStop.classList.add('hidden');
+            btnStart.disabled = false;
+            isScannerRunning = false;
+        }
 
+        function stopScanner() {
+            try {
+                if (html5QrcodeScanner && isScannerRunning) {
+                    html5QrcodeScanner.clear().catch(err => {
+                        console.warn('[v0] Clear error:', err);
+                    });
+                    html5QrcodeScanner = null;
+                    console.log('[v0] Camera stopped');
+                }
+            } catch (error) {
+                console.error('[v0] Stop error:', error);
+            }
+
+            resetCameraUI();
             showAlert('⏹️ Kamera ditutup', 'info', 2000);
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            console.log('[QR Scanner] Success:', decodedText);
+            console.log('[v0] QR detected:', decodedText);
             document.getElementById('manualToken').value = decodedText;
             stopScanner();
             showAlert('✅ QR Code terdeteksi! Memproses...', 'success', 2000);
@@ -565,7 +596,7 @@
                 if (error.message.includes('NotFoundException') ||
                     error.message.includes('NotAllowedError') ||
                     error.message.includes('NotFoundError')) {
-                    console.warn('[QR Scanner] Camera error:', error.message);
+                    // Normal scanning - silently ignore
                 }
             }
         }
@@ -618,7 +649,7 @@
                 });
 
                 const data = await response.json();
-                console.log('[Check-in] Response:', data);
+                console.log('[v0] Check-in response:', data);
 
                 if (data.success) {
                     showAlert('✅ Check-in berhasil!', 'success', 4000);
