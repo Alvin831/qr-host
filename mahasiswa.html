@@ -242,29 +242,44 @@
         }
         
         .scanner-container {
-            background: #1a1a1a;
+            background: #000;
             border-radius: 20px;
             overflow: hidden;
             margin: 25px 0;
             position: relative;
             display: none;
             box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            width: 100%;
+            min-height: 350px;
         }
         
         #reader {
             border: none !important;
+            width: 100% !important;
+            min-height: 350px !important;
         }
         
         #reader video {
             border-radius: 20px;
+            object-fit: cover;
         }
         
         #reader__scan_region {
             border-radius: 20px !important;
+            border: 3px solid #4facfe !important;
         }
         
         #reader__dashboard_section {
             display: none !important;
+        }
+        
+        #reader__top_section {
+            display: none !important;
+        }
+        
+        #reader__status_span {
+            color: #fff !important;
+            font-weight: 500 !important;
         }
         
         .alert {
@@ -463,42 +478,66 @@
                 return;
             }
             
-            scannerContainer.style.display = 'block';
-            btnStart.style.display = 'none';
-            btnStop.style.display = 'block';
-            
-            try {
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader",
-                    { 
-                        fps: 15,
-                        qrbox: { 
-                            width: 250, 
-                            height: 250 
-                        },
-                        aspectRatio: 1.0,
-                        rememberLastUsedCamera: true,
-                        showTorchButtonIfSupported: true,
-                        videoConstraints: {
-                            facingMode: 'environment',
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    },
-                    false
-                );
+            // Minta akses kamera terlebih dahulu
+            navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } 
+            }).then(stream => {
+                // Stop stream sementara, akan di-start ulang oleh scanner
+                stream.getTracks().forEach(track => track.stop());
                 
-                html5QrcodeScanner.render(onScanSuccess, onScanError);
-                showAlert('📷 Kamera aktif. Arahkan ke QR code.', 'info');
-                console.log('[QR Scanner] Kamera berhasil diaktifkan');
-            } catch (error) {
-                console.error('[QR Scanner] Error:', error);
-                showAlert('❌ Gagal membuka kamera: ' + error.message, 'error');
+                scannerContainer.style.display = 'block';
+                btnStart.style.display = 'none';
+                btnStop.style.display = 'block';
+                
+                setTimeout(() => {
+                    try {
+                        html5QrcodeScanner = new Html5QrcodeScanner(
+                            "reader",
+                            { 
+                                fps: 20,
+                                qrbox: { 
+                                    width: 280, 
+                                    height: 280 
+                                },
+                                aspectRatio: 1.0,
+                                rememberLastUsedCamera: true,
+                                showTorchButtonIfSupported: true
+                            },
+                            false
+                        );
+                        
+                        html5QrcodeScanner.render(onScanSuccess, onScanError);
+                        showAlert('📷 Kamera aktif. Arahkan QR code ke tengah layar.', 'info');
+                        console.log('[v0] Kamera berhasil diaktifkan');
+                    } catch (error) {
+                        console.error('[v0] Error render scanner:', error);
+                        showAlert('❌ Gagal membuka scanner: ' + error.message, 'error');
+                        scannerContainer.style.display = 'none';
+                        btnStart.style.display = 'block';
+                        btnStop.style.display = 'none';
+                        html5QrcodeScanner = null;
+                    }
+                }, 100);
+                
+            }).catch(err => {
+                console.error('[v0] Permission error:', err.name, err.message);
+                let errorMsg = '❌ Tidak bisa akses kamera. ';
+                
+                if (err.name === 'NotAllowedError') {
+                    errorMsg += 'Izin kamera ditolak. Buka settings dan izinkan kamera.';
+                } else if (err.name === 'NotFoundError') {
+                    errorMsg += 'Kamera tidak ditemukan di device ini.';
+                } else if (err.name === 'NotReadableError') {
+                    errorMsg += 'Kamera sedang digunakan aplikasi lain.';
+                } else {
+                    errorMsg += err.message;
+                }
+                
+                showAlert(errorMsg, 'error');
                 scannerContainer.style.display = 'none';
                 btnStart.style.display = 'block';
                 btnStop.style.display = 'none';
-                html5QrcodeScanner = null;
-            }
+            });
         }
         
         function stopScanner() {
