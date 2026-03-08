@@ -242,7 +242,7 @@
         }
         
         .scanner-container {
-            background: #000;
+            background: #1a1a1a;
             border-radius: 20px;
             overflow: hidden;
             margin: 25px 0;
@@ -251,33 +251,20 @@
             box-shadow: 0 15px 40px rgba(0,0,0,0.5);
         }
         
-        #scanner {
-            width: 100%;
-            max-height: 500px;
-            object-fit: cover;
+        #reader {
+            border: none !important;
         }
         
-        .scanner-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 250px;
-            height: 250px;
-            border: 4px solid #00ff00;
+        #reader video {
             border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
         }
         
-        .scanner-overlay::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            animation: scanLine 2s linear infinite;
+        #reader__scan_region {
+            border-radius: 20px !important;
+        }
+        
+        #reader__dashboard_section {
+            display: none !important;
         }
         
         .alert {
@@ -406,8 +393,7 @@
             <button class="btn" onclick="stopScanner()" id="btnStopScan" style="display: none; background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">⏹️ Tutup Kamera</button>
             
             <div class="scanner-container" id="scannerContainer">
-                <video id="scanner" playsinline></video>
-                <div class="scanner-overlay"></div>
+                <div id="reader" style="width: 100%;"></div>
             </div>
             
             <div class="divider">── ATAU ──</div>
@@ -427,7 +413,7 @@
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        let html5QrCode = null;
+        let html5QrcodeScanner = null;
         
         window.onload = function() {
             const savedUrl = localStorage.getItem('baseUrl');
@@ -444,86 +430,42 @@
             alertBox.style.display = 'block';
         }
         
-        async function startScanner() {
+        function startScanner() {
             const scannerContainer = document.getElementById('scannerContainer');
             const btnStart = document.getElementById('btnStartScan');
             const btnStop = document.getElementById('btnStopScan');
             
-            try {
-                // Cek apakah browser support getUserMedia
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Browser tidak support kamera. Gunakan browser modern seperti Chrome atau Safari.');
-                }
-                
-                html5QrCode = new Html5Qrcode("scanner");
-                
-                // Config untuk mobile (Android & iPhone)
-                const config = {
+            scannerContainer.style.display = 'block';
+            btnStart.style.display = 'none';
+            btnStop.style.display = 'block';
+            
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader",
+                { 
                     fps: 10,
                     qrbox: function(viewfinderWidth, viewfinderHeight) {
-                        // Responsive QR box
                         let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                        let qrboxSize = Math.floor(minEdge * 0.7);
+                        let qrboxSize = Math.floor(minEdge * 0.8);
                         return {
                             width: qrboxSize,
                             height: qrboxSize
                         };
                     },
-                    aspectRatio: 1.0
-                };
-                
-                // Coba pakai kamera belakang dulu (untuk mobile)
-                try {
-                    await html5QrCode.start(
-                        { facingMode: "environment" }, // Kamera belakang
-                        config,
-                        onScanSuccess,
-                        onScanFailure
-                    );
-                } catch (err) {
-                    // Kalau gagal, coba kamera depan
-                    console.log('Kamera belakang gagal, coba kamera depan:', err);
-                    await html5QrCode.start(
-                        { facingMode: "user" }, // Kamera depan
-                        config,
-                        onScanSuccess,
-                        onScanFailure
-                    );
-                }
-                
-                scannerContainer.style.display = 'block';
-                btnStart.style.display = 'none';
-                btnStop.style.display = 'block';
-                
-                showAlert('📷 Kamera aktif. Arahkan ke QR code.', 'info');
-            } catch (err) {
-                console.error('Error starting scanner:', err);
-                let errorMsg = '❌ Gagal membuka kamera. ';
-                
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    errorMsg += 'Izinkan akses kamera di browser settings.';
-                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                    errorMsg += 'Kamera tidak ditemukan di device ini.';
-                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                    errorMsg += 'Kamera sedang digunakan aplikasi lain.';
-                } else if (err.name === 'OverconstrainedError') {
-                    errorMsg += 'Kamera tidak support resolusi yang diminta.';
-                } else if (err.name === 'NotSupportedError') {
-                    errorMsg += 'Browser tidak support kamera. Gunakan HTTPS atau browser modern.';
-                } else {
-                    errorMsg += err.message || 'Error tidak diketahui.';
-                }
-                
-                errorMsg += '<br><br><strong>Tips:</strong><br>• Pastikan menggunakan HTTPS<br>• Izinkan akses kamera<br>• Gunakan Chrome/Safari terbaru<br>• Tutup aplikasi lain yang pakai kamera';
-                
-                showAlert(errorMsg, 'error');
-            }
+                    aspectRatio: 1.0,
+                    rememberLastUsedCamera: true,
+                    showTorchButtonIfSupported: true
+                },
+                false
+            );
+            
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+            showAlert('📷 Kamera aktif. Arahkan ke QR code.', 'info');
         }
         
-        async function stopScanner() {
-            if (html5QrCode) {
-                await html5QrCode.stop();
-                html5QrCode = null;
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
             }
             
             document.getElementById('scannerContainer').style.display = 'none';
@@ -538,8 +480,8 @@
             setTimeout(() => checkInManual(), 500);
         }
         
-        function onScanFailure(error) {
-            // Ignore
+        function onScanError(error) {
+            // Ignore continuous scan errors
         }
         
         async function checkInManual() {
